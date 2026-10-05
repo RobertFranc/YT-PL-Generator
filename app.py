@@ -22,6 +22,8 @@ with st.sidebar:
         type="password",
         help="Get a free key from Google Cloud Console."
     )
+    if not api_key:
+        api_key = st.secrets.API_KEY
 
     # Page text layout:
     st.header("🔑 API Authentication 🔑")
