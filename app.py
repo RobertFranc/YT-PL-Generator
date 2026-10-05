@@ -128,46 +128,66 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
                 "publishedBefore": published_before,
                 "key": api_key
             }
+            print('🪪 parameters:', params)
             if video_category:
                 params["videoCategoryId"] = video_category
+            url = f"https://googleapis.com{API_KEY}"
 
-            try:
-                response = requests.get(url, params=params)
-                # response.raise_for_status() 
-                if response.status_code == 200:
-                    st.markdown(f"👏 requests satus ✅ {response.status_code}")
-                    st.markdown(f"👏 search_query ✅ {search_query}")
-                    st.markdown(f"👏 genre ✅ {genre}")
-                    print(type(response), response.status_code, response)
-
-
-                    results = response.json().get("items", [])
-                    
-                    # Parse results into custom playlist schema
-                    new_playlist = []
-                    for item in results:
-                        video_id = item["id"]["videoId"]
-                        # Populate playlist:
-                        new_playlist.append({
-                            "id": video_id,
-                            "title": item["snippet"]["title"],
-                            # FIX 2: Correctly formatted YouTube Watch URL string
-                            "url": f"https://youtube.com/{video_id}",
-                            "thumbnail": item["snippet"]["thumbnails"]["medium"]["url"],
-                            "channel": item["snippet"]["channelTitle"]
-                        })
-                    
-                    if new_playlist:
-                        st.session_state.playlist = new_playlist
-                        st.session_state.current_index = 0
-                        st.success(f"Successfully generated a playlist with {len(new_playlist)} items!")
-                        st.rerun()
+            response = requests.get(url)
+            response = requests.get(url, params=params)
+            # response.raise_for_status() 
+            
+            # 1. Check if Google blocked or rejected the request
+            if response.status_code != 200:
+                print(f"❌ HTTP Error Code: {response.status_code}")
+                print("--- RAW SERVER RESPONSE ---")
+                print(response.text[:500])  # Look at the first 500 characters of the error
+                print("---------------------------")
+            else:
+                # 2. Safely check if the response content-type is JSON
+                try:
+                    data = response.json()
+                    print("✅ Success! Video Title:", data['items'][0]['snippet']['title'])
+                
+                    if response.status_code == 200:
+                        st.markdown(f"👏 requests satus ✅ {response.status_code}")
+                        st.markdown(f"👏 search_query ✅ {search_query}")
+                        st.markdown(f"👏 genre ✅ {genre}")
+                        print(type(response), response.status_code, response)
+    
+    
+                        results = response.json().get("items", [])
+                        
+                        # Parse results into custom playlist schema
+                        new_playlist = []
+                        for item in results:
+                            video_id = item["id"]["videoId"]
+                            # Populate playlist:
+                            new_playlist.append({
+                                "id": video_id,
+                                "title": item["snippet"]["title"],
+                                # FIX 2: Correctly formatted YouTube Watch URL string
+                                "url": f"https://youtube.com/{video_id}",
+                                "thumbnail": item["snippet"]["thumbnails"]["medium"]["url"],
+                                "channel": item["snippet"]["channelTitle"]
+                            })
+                        
+                        if new_playlist:
+                            st.session_state.playlist = new_playlist
+                            st.session_state.current_index = 0
+                            st.success(f"Successfully generated a playlist with {len(new_playlist)} items!")
+                            st.rerun()
+                        else:
+                            st.warning("👻 No videos matched your precise criteria. Try widening the year range or changing keywords.")
                     else:
-                        st.warning("👻 No videos matched your precise criteria. Try widening the year range or changing keywords.")
-                else:
-                    st.error(f"🙅🏻‍♂️ API Error 🙅🏻‍♂️ ({response.status_code}): {response.json().get('error', {}).get('message', 'Unknown Error')}")
-            except Exception as e:
-                st.error(f"🚨 Failed to connect to the API: {e}")
+                        st.error(f"🙅🏻‍♂️ API Error 🙅🏻‍♂️ ({response.status_code}): {response.json().get('error', {}).get('message', 'Unknown Error')}")
+                except ValueError as ve:
+                    st.error('❌' * 10)
+                    st.error(f"❌ Status code was 200, but data wasn't JSON. ❌")
+                    st.error(f'ValueError: {ve}')
+                    st.error(f"Raw text: {response.text}")
+                except Exception as e:
+                    st.error(f"🚨 Failed to connect to the API: {e}")
 
 # 4. Playlist & Playback Section
 if st.session_state.playlist:
