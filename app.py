@@ -24,7 +24,7 @@ with st.sidebar:
     )
 
     # Page text layout:
-    st.header("🔑 API 🔑 Authentication 🔑")
+    st.header("🔑 API 🔑🔑 Authentication 🔑")
     st.markdown("---")
     st.header("⚙️ Playlist Controls ⚙️")
 
@@ -40,7 +40,7 @@ with st.sidebar:
 # 1. API Authentication check and default:
 if not api_key:
     api_key = st.secrets.API_KEY
-
+print('🔑apikey:', api_key is not None)
 # Initialize Session States
 if "playlist" not in st.session_state:
     st.session_state.playlist = []
@@ -133,7 +133,7 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
                 params["videoCategoryId"] = video_category
             url = f"https://googleapis.com{st.secrets.API_KEY}"
 
-            response = requests.get(url)
+            # response = requests.get(url)
             response = requests.get(url, params=params)
             # response.raise_for_status() 
             
