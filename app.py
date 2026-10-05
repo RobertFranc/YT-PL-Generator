@@ -22,8 +22,6 @@ with st.sidebar:
         type="password",
         help="Get a free key from Google Cloud Console."
     )
-    if not api_key:
-        api_key = st.secrets.API_KEY
 
     # Page text layout:
     st.header("🔑 API Authentication 🔑")
@@ -37,6 +35,11 @@ with st.sidebar:
         st.session_state.playlist = []
         st.session_state.current_index = 0
         st.rerun()
+
+
+# 1. API Authentication check and default:
+if not api_key:
+    api_key = st.secrets.API_KEY
 
 # Initialize Session States
 if "playlist" not in st.session_state:
@@ -61,15 +64,22 @@ with col1: # content type - Music or Video
             "Music Genre",
             placeholder="e.g., Synthwave, Lofi, Jazz"
         )
+        if not genre:
+            genre = 'Rock'
     else: # Video content
         video_type = st.selectbox(
             "Video Type",
-            ["Tutorial", "Movie", "Documentary", "Tutorial", "General Content"]
+            ["Tutorial", "Movie", "Documentary", "General Content"]
         )
+        if not video_type:
+            video_type = 'Tutorial'
+            
         genre = st.text_input(
             "Genre / Topic Keyword",
             placeholder="e.g., Python, Sci-Fi, DIY, Cooking"
         )
+        if not genre:
+            genre = 'Python'
 
 with col2: # Playlist length (quantity)
     quantity = st.number_input(
@@ -91,7 +101,7 @@ with col3: # Year
 # 3. Fetching Data from YouTube API
 if st.button("🚀 Generate Playlist", type="primary", use_container_width=True):
     if not api_key:
-        st.error("Please enter your YouTube API Key in the sidebar.")
+        st.error("❌🔑❌ Please enter your YouTube API Key in the sidebar.")
     else:
         with st.spinner("Searching YouTube catalog..."):
             # Format dates to RFC 3339 strings for YouTube API
@@ -107,7 +117,7 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
                 video_category = "" # Default
 
             # FIX 1: Correct URL endpoint for YouTube Video Search
-            url = "https://googleapis.com"
+            url = "https://googleapis.com/"
             params = {
                 "part": "snippet",
                 "q": search_query,
@@ -136,7 +146,7 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
                             "id": video_id,
                             "title": item["snippet"]["title"],
                             # FIX 2: Correctly formatted YouTube Watch URL string
-                            "url": f"https://youtube.com{video_id}",
+                            "url": f"https://youtube.com/{video_id}",
                             "thumbnail": item["snippet"]["thumbnails"]["medium"]["url"],
                             "channel": item["snippet"]["channelTitle"]
                         })
@@ -147,11 +157,11 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
                         st.success(f"Successfully generated a playlist with {len(new_playlist)} items!")
                         st.rerun()
                     else:
-                        st.warning("No videos matched your precise criteria. Try widening the year range or changing keywords.")
+                        st.warning("👻 No videos matched your precise criteria. Try widening the year range or changing keywords.")
                 else:
-                    st.error(f"API Error ({response.status_code}): {response.json().get('error', {}).get('message', 'Unknown Error')}")
+                    st.error(f"🙅🏻‍♂️ API Error 🙅🏻‍♂️ ({response.status_code}): {response.json().get('error', {}).get('message', 'Unknown Error')}")
             except Exception as e:
-                st.error(f"Failed to connect to the API: {e}")
+                st.error(f"🚨 Failed to connect to the API: {e}")
 
 # 4. Playlist & Playback Section
 if st.session_state.playlist:
@@ -193,4 +203,5 @@ if st.session_state.playlist:
                     st.session_state.current_index = idx
                     st.rerun()
 else:
-    st.info("Your playlist is currently empty. Adjust the parameters and hit 'Generate Playlist' above.")
+    st.info("🪫 Your playlist is currently empty. Adjust the parameters and hit 'Generate Playlist' above.") 
+
