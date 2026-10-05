@@ -133,8 +133,14 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
 
             try:
                 response = requests.get(url, params=params)
-                
+                # response.raise_for_status() 
                 if response.status_code == 200:
+                    st.markdown(f"👏 requests satus ✅ {response.status_code}")
+                    st.markdown(f"👏 search_query ✅ {search_query}")
+                    st.markdown(f"👏 genre ✅ {genre}")
+                    print(type(response), response.status_code, response)
+
+
                     results = response.json().get("items", [])
                     
                     # Parse results into custom playlist schema
@@ -204,4 +210,5 @@ if st.session_state.playlist:
                     st.rerun()
 else:
     st.info("🪫 Your playlist is currently empty. Adjust the parameters and hit 'Generate Playlist' above.") 
+
 
