@@ -24,7 +24,7 @@ with st.sidebar:
     )
 
     # Page text layout:
-    st.header("🔑 API Authentication 🔑")
+    st.header("🔑 API 🔑 Authentication 🔑")
     st.markdown("---")
     st.header("⚙️ Playlist Controls ⚙️")
 
@@ -131,7 +131,7 @@ if st.button("🚀 Generate Playlist", type="primary", use_container_width=True)
             print('🪪 parameters:', params)
             if video_category:
                 params["videoCategoryId"] = video_category
-            url = f"https://googleapis.com{API_KEY}"
+            url = f"https://googleapis.com{st.secrets.API_KEY}"
 
             response = requests.get(url)
             response = requests.get(url, params=params)
