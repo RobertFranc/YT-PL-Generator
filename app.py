@@ -134,7 +134,7 @@ if st.session_state.playlist:
         player = new YT.Player('player', {{
           height: '100%',
           width: '100%',
-          videoId: '{current_track['id']}',
+          videoId: '{current_track['video_url']}',
           playerVars: {{
             'playsinline': 1,
             'autoplay': 1,
