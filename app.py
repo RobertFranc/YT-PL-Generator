@@ -39,7 +39,8 @@ def fetch_filtered_youtube_urls(topic, max_results, order_by):
     if not topic.strip():
         return []
         
-    search_url = "https://googleapis.com"
+    #search_url = "https://googleapis.com"
+    search_url = "https://www.googleapis.com/youtube/v3/search"
     video_details_url = "https://googleapis.com"
     
     search_params = {
