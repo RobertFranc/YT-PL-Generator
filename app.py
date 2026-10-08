@@ -4,10 +4,14 @@ import streamlit as st
 import requests
 
 # =====================================================================
-# ⚙️ STEP 1: PERSISTENT HISTORY STORAGE UTILITIES
+# ⚙️ STEP 1: PARAMETERS & PERSISTENT HISTORY STORAGE
 # =====================================================================
-API_KEY        = st.secrets['API_KEY']
+API_KEY        = st.secrets["API_KEY"]
+SEARCH_TOPIC   = "Countey song"
+VIDEO_COUNT    = 15
+SEARCH_ORDER   = "relevance"
 HISTORY_FILE   = "last_played_track.txt"
+
 
 def load_saved_index():
     """Reads the local history file to recall where you left off."""
@@ -24,31 +28,22 @@ def save_current_index(index):
     with open(HISTORY_FILE, "w") as f:
         f.write(str(index))
 
-def clear_saved_index():
-    """Deletes the tracking history file to start completely fresh."""
-    if os.path.exists(HISTORY_FILE):
-        os.remove(HISTORY_FILE)
-
 # =====================================================================
 # 🔍 STEP 2: SEARCH QUERY WITH ACTIVE LIVE-STREAM FILTERING
 # =====================================================================
 @st.cache_data(show_spinner="Searching YouTube & removing live streams...")
-def fetch_filtered_youtube_urls(topic, max_results, order_by):
+def fetch_filtered_youtube_urls():
     """Hits search index, checks video details, filters out live content."""
-    # Ensure empty inputs do not execute broken API streams
-    if not topic.strip():
-        return []
-        
-    #search_url = "https://googleapis.com"
     search_url = "https://www.googleapis.com/youtube/v3/search"
     video_details_url = "https://googleapis.com"
     
+    # A. Execute keyword search lookup
     search_params = {
         "part": "snippet",
-        "q": topic,
-        "maxResults": max_results,
+        "q": SEARCH_TOPIC,
+        "maxResults": VIDEO_COUNT,
         "type": "video",
-        "order": order_by,
+        "order": SEARCH_ORDER,
         "key": API_KEY
     }
     
@@ -61,8 +56,10 @@ def fetch_filtered_youtube_urls(topic, max_results, order_by):
         if not items:
             return []
             
+        # Collect extracted target video IDs for batch parsing validation
         video_ids = [item["id"]["videoId"] for item in items if "videoId" in item["id"]]
         
+        # B. Bulk check structural attributes targeting /videos payload endpoint
         details_params = {
             "part": "snippet,liveStreamingDetails",
             "id": ",".join(video_ids),
@@ -75,12 +72,15 @@ def fetch_filtered_youtube_urls(topic, max_results, order_by):
         
         playlist = []
         for video_item in details_data.get("items", []):
-            # Skip live streams or upcoming premieres completely
+            # STABILITY CHECK: If liveStreamingDetails block exists, it's a live stream or premiere
             if "liveStreamingDetails" in video_item:
-                continue 
+                continue  # Skip item entirely
                 
+            title = video_item["snippet"]["title"]
+            video_id = video_item["id"]
+            
             playlist.append({
-                "title": video_item["snippet"]["title"],
+                "title": title,
                 "url": f"https://youtube.com{video_id}"
             })
             
@@ -94,23 +94,17 @@ def fetch_filtered_youtube_urls(topic, max_results, order_by):
 # 🎛️ STEP 3: PLAYBACK LAYOUT CONTROLLER ENGINE
 # =====================================================================
 st.set_page_config(page_title="Smart Playlist Deck", page_icon="🎬", layout="wide")
-st.title("🎬 Smart Media Deck (Interactive Engine)")
+st.title("🎬 Smart Media Deck (Filtered & Autosaved)")
 
-# Define Sidebar Controls
-st.sidebar.header("🔍 Global Search Config")
-search_topic = st.sidebar.text_input("Search Keyword / Topic", value="Chillhop Lofi Beats")
-video_count  = st.sidebar.slider("Videos to Query", min_value=5, max_value=50, value=15)
-search_order = st.sidebar.selectbox("Sort Order", ["relevance", "date", "viewCount", "rating"])
-
-# Pull filtered data arrays using dynamic UI parameters
-video_playlist = fetch_filtered_youtube_urls(search_topic, video_count, search_order)
+video_playlist = fetch_filtered_youtube_urls()
 
 if not video_playlist:
-    st.warning("⚠️ Setup check: Enter a search topic and verify your API Key.")
+    st.warning("⚠️ Setup check: Please verify your API Key or adjust search parameters.")
 else:
-    # Synchronize index memory
+    # Set the cursor pointer state to the remembered file position history entry
     if "current_index" not in st.session_state:
         saved_pos = load_saved_index()
+        # Bound check position indicator to prevent faults if the playlist length changes
         st.session_state.current_index = saved_pos if saved_pos < len(video_playlist) else 0
 
     total_videos = len(video_playlist)
@@ -123,7 +117,7 @@ else:
         st.video(current_video["url"])
         
         st.write("")
-        nav_prev, _, nav_next = st.columns()
+        nav_prev, _, nav_next = st.columns([1, 2, 1])
         
         with nav_prev:
             if st.button("⏮️ Previous Video", use_container_width=True):
@@ -156,13 +150,6 @@ else:
             save_current_index(target_index)
             st.rerun()
 
-        # History Clear Engine
-        if st.button("🔄 Reset Position History to First Track", use_container_width=True):
-            clear_saved_index()
-            st.session_state.current_index = 0
-            st.success("History log wiped out! Resetting position tracker.")
-            st.rerun()
-
         # Data Manifest Bundle Exporter Utilities
         st.write("---")
         st.subheader("💾 Export Current Queue")
@@ -178,7 +165,7 @@ else:
 
         # Active Queue Tracker Dashboard Monitor
         st.write("---")
-        st.info(f"💾 Autosave tracking active to `{HISTORY_FILE}`.")
+        st.info(f"💾 Autofreeze: Saved current track index location to `{HISTORY_FILE}`.")
         
         st.subheader("Up Next Queue")
         for idx, vid in enumerate(video_playlist):
