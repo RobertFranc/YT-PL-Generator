@@ -12,7 +12,8 @@ except KeyError:
 
 def fetch_youtube_videos(query, api_key, max_results=5):
     """Fetches high-definition videos from YouTube API based on the query."""
-    url = "https://googleapis.com"
+    url = "https://www.googleapis.com/youtube/v3/search"
+    
     
     params = {
         'part': 'snippet',
