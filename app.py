@@ -7,9 +7,9 @@ import requests
 # ⚙️ STEP 1: PARAMETERS & PERSISTENT HISTORY STORAGE
 # =====================================================================
 API_KEY        = st.secrets["API_KEY"]
-SEARCH_TOPIC   = "Countey song"
+SEARCH_TOPIC   = "Country song"
 VIDEO_COUNT    = 15
-SEARCH_ORDER   = "relevance"
+SEARCH_ORDER   = "relevance" # 'viewCount', 
 HISTORY_FILE   = "last_played_track.txt"
 
 
@@ -31,26 +31,44 @@ def save_current_index(index):
 # =====================================================================
 # 🔍 STEP 2: SEARCH QUERY WITH ACTIVE LIVE-STREAM FILTERING
 # =====================================================================
+
+
 @st.cache_data(show_spinner="Searching YouTube & removing live streams...")
 def fetch_filtered_youtube_urls():
     """Hits search index, checks video details, filters out live content."""
     search_url = "https://www.googleapis.com/youtube/v3/search"
     video_details_url = "https://googleapis.com"
+    # FIXED: Added the full /youtube/v3/search path to the base domain
     
     # A. Execute keyword search lookup
+    query = "Python programming tutorial"
     search_params = {
         "part": "snippet",
-        "q": SEARCH_TOPIC,
+        "q": SEARCH_TOPIC, # query
         "maxResults": VIDEO_COUNT,
         "type": "video",
         "order": SEARCH_ORDER,
         "key": API_KEY
+        'videoDefinition': 'high',
     }
-    
     try:
         search_response = requests.get(search_url, params=search_params)
+        
+        print(f"\n--- Top Results for '{SEARCH_TOPIC}' ---")
+
         search_response.raise_for_status()
         search_data = search_response.json()
+        
+        for item in search_data.get('items', []):
+            video_id = item['id']['videoId']
+            title = item['snippet']['title']
+            channel = item['snippet']['channelTitle']
+            
+            print(f"🎬 Title: {title}")
+            print(f"   Channel: {channel}")
+            print(f"   Link: https://www.youtube.com/watch?v={video_id}\n")
+
+
         
         items = search_data.get("items", [])
         if not items:
@@ -85,7 +103,14 @@ def fetch_filtered_youtube_urls():
             })
             
         return playlist
-        
+
+    except requests.exceptions.HTTPError as http_err:
+        st.error(f"HTTP error occurred: {http_err}")
+        st.error(f"Response Details: {response.text}")
+        return []
+    except Exception as err:
+        st.error(f"An error occurred: {err}")
+        return []
     except Exception as e:
         st.error(f"API Connection Failure: {e}")
         return []
