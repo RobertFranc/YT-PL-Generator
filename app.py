@@ -22,19 +22,37 @@ def fetch_youtube_videos(query, api_key, max_results=5):
         'maxResults': max_results,
         'key': api_key
     }
+    
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
+
+        
         
         playlist = []
         for item in data.get('items', []):
+            video_id = item['id']['videoId']
+            title = item['snippet']['title']
+            channel = item['snippet']['channelTitle']
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            
             playlist.append({
-                'id': item['id']['videoId'],
-                'title': item['snippet']['title'],
-                'channel': item['snippet']['channelTitle']
+                'id': video_id,
+                'title': title,
+                'channel': channel,
+                'video_url': video_url
             })
+
+            # Display each result as a clean web card
+            # Web UI Layout
+            #st.subheader(f"🎬 {title}")
+            #st.caption(f"**Channel:** {channel}")
+            #st.video(video_url)  # Embeds the playable video directly in the app!
+            #st.markdown("---")
+
         return playlist
+        
     except Exception as err:
         st.error(f"Error fetching data from YouTube: {err}")
         return []
@@ -48,11 +66,11 @@ if 'playback_speed' not in st.session_state:
     st.session_state.playback_speed = 1.0
 
 # --- App Layout ---
-st.title("🎵 Interactive YouTube Playlist Player")
+st.title("🎵 YouTube Playlist Player")
 
 # Search UI Side panel / Header
 with st.expander("🔍 Search & Create Playlist", expanded=not bool(st.session_state.playlist)):
-    search_query = st.text_input("Search term:", value="Rock music")
+    search_query = st.text_input("Search term:", value="love song")
     results_count = st.slider("Tracks to fetch", min_value=2, max_value=15, value=5)
     
     if st.button("Generate Playlist"):
@@ -100,11 +118,14 @@ if st.session_state.playlist:
 
     # --- ADVANCED IFRAME PLAYER COMPONENT ---
     # We use Javascript YouTube Iframe Player API to support custom runtime playback speeds natively
+    #tag.src = "https://youtube.com";
+    #tag.src = "https://m.youtube.com";
+    #tag.src = "https://m.youtube.com/?ra=m";
     player_html = f"""
     <div id="player" style="width:100%; max-width:640px; margin:0 auto; aspect-ratio:16/9;"></div>
     <script>
       var tag = document.createElement('script');
-      tag.src = "https://youtube.com";
+      tag.src = "https://m.youtube.com";
       var firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
