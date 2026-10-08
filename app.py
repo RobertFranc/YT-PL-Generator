@@ -116,49 +116,11 @@ if st.session_state.playlist:
             st.session_state.current_index = chosen_index
             st.rerun()
 
-    # --- ADVANCED IFRAME PLAYER COMPONENT ---
-    # We use Javascript YouTube Iframe Player API to support custom runtime playback speeds natively
-    player_html = f"""
-    <div id="player" style="width:100%; max-width:640px; margin:0 auto; aspect-ratio:16/9;"></div>
-    <script>
-      // 1. Correctly load the formal YouTube Player API framework file
-      var tag = document.createElement('script');
-      tag.src = "https://youtube.com";
-      
-      // 2. Safely grab the first available script node using index zero [0]
-      var firstScriptTag = document.getElementsByTagName('script')[0];
-      if (firstScriptTag) {{
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      }} else {{
-        document.head.appendChild(tag);
-      }}
+        # Replace the entire --- ADVANCED IFRAME PLAYER COMPONENT --- section with this simple line:
+        # Streamlit natively creates a flawless, fully-functional player card automatically.
+        st.video(current_track['video_url'])
 
-      var player;
-      function onYouTubeIframeAPIReady() {{
-        player = new YT.Player('player', {{
-          height: '100%',
-          width: '100%',
-          videoId: '{current_track['id']}', // Correctly passing the 11-character string variable
-          playerVars: {{
-            'playsinline': 1,
-            'autoplay': 1,
-            'controls': 1
-          }},
-          events: {{
-            'onReady': onPlayerReady
-          }}
-        }});
-      }}
 
-      function onPlayerReady(event) {{
-        // Dynamically inject the custom speed selected from Streamlit
-        event.target.setPlaybackRate({st.session_state.playback_speed});
-      }}
-    </script>
-    """
-    
-    # Render player component (keeps static structural position on page)
-    st.components.v1.html(player_html, height=400)
     
     # --- Playlist Navigation Controls ---
     st.markdown("### 🎛️ Navigation Controls")
