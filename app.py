@@ -48,7 +48,7 @@ def fetch_filtered_youtube_urls():
         "maxResults": VIDEO_COUNT,
         "type": "video",
         "order": SEARCH_ORDER,
-        "key": API_KEY
+        "key": API_KEY,
         'videoDefinition': 'high',
     }
     try:
