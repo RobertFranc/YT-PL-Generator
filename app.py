@@ -22,12 +22,10 @@ def fetch_youtube_videos(query, api_key, max_results=5):
         'maxResults': max_results,
         'key': api_key
     }
-    
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        print(data['items'][0].keys())
         
         playlist = []
         for item in data.get('items', []):
@@ -50,11 +48,11 @@ if 'playback_speed' not in st.session_state:
     st.session_state.playback_speed = 1.0
 
 # --- App Layout ---
-st.title("🎵 YouTube Playlist Player")
+st.title("🎵 Interactive YouTube Playlist Player")
 
 # Search UI Side panel / Header
 with st.expander("🔍 Search & Create Playlist", expanded=not bool(st.session_state.playlist)):
-    search_query = st.text_input("Search term:", value="love song")
+    search_query = st.text_input("Search term:", value="Rock music")
     results_count = st.slider("Tracks to fetch", min_value=2, max_value=15, value=5)
     
     if st.button("Generate Playlist"):
