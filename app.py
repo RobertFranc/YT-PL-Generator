@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import streamlit.components.v1 as components
 
 # 1. Fetch API Key securely
 try:
@@ -10,7 +11,6 @@ except KeyError:
 
 def fetch_youtube_videos(query, api_key, max_results=5):
     """Fetches high-definition videos from YouTube API based on the query."""
-    url = "https://googleapis.com"
     url = "https://www.googleapis.com/youtube/v3/search"
     
     params = {
@@ -28,8 +28,6 @@ def fetch_youtube_videos(query, api_key, max_results=5):
         response.raise_for_status()
         data = response.json()
 
-        
-        
         playlist = []
         for item in data.get('items', []):
             video_id = item['id']['videoId']
@@ -43,13 +41,6 @@ def fetch_youtube_videos(query, api_key, max_results=5):
                 'channel': channel,
                 'video_url': video_url
             })
-
-            # Display each result as a clean web card
-            # Web UI Layout
-            #st.subheader(f"🎬 {title}")
-            #st.caption(f"**Channel:** {channel}")
-            #st.video(video_url)  # Embeds the playable video directly in the app!
-            #st.markdown("---")
 
         return playlist
         
@@ -93,7 +84,6 @@ if st.session_state.playlist:
     # Control Sidebar / Row for playback adjustments
     col_speed, col_jump = st.columns([1, 2])
     with col_speed:
-        # Playback speed map
         speeds = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0]
         selected_speed = st.selectbox(
             "Playback Speed", 
@@ -116,12 +106,75 @@ if st.session_state.playlist:
             st.session_state.current_index = chosen_index
             st.rerun()
 
-        # Replace the entire --- ADVANCED IFRAME PLAYER COMPONENT --- section with this simple line:
-        # Streamlit natively creates a flawless, fully-functional player card automatically.
-        st.video(current_track['video_url'])
-
-
+    # --- ADVANCED IFRAME PLAYER COMPONENT WITH AUTOPLAY LISTENER ---
+    # Construct comma-separated list of IDs starting from the current selection onwards
+    ordered_ids = [track['id'] for track in st.session_state.playlist]
+    shifted_ids = ordered_ids[st.session_state.current_index:] + ordered_ids[:st.session_state.current_index]
     
+    base_video_id = shifted_ids[0]
+    playlist_parameter = ",".join(shifted_ids)
+
+    # Note: Modern browsers require autoplay=1 and mute=1 combined for seamless auto-transitions
+    iframe_src = f"https://youtube.com{base_video_id}?playlist={playlist_parameter}&autoplay=1&mute=1&enablejsapi=1"
+
+    # Embedded HTML with a JavaScript YouTube API listener. 
+    # When a track finishes, it posts a message to Streamlit to sync up the 'current_index' state.
+    html_code = f"""
+    <div id="player"></div>
+    <script>
+      var tag = document.createElement('script');
+      tag.src = "https://youtube.com";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      var player;
+      function onYouTubeIframeAPIReady() {{
+        player = new YT.Player('player', {{
+          height: '360',
+          width: '100%',
+          videoId: '{base_video_id}',
+          playerVars: {{
+            'playlist': '{playlist_parameter}',
+            'autoplay': 1,
+            'mute': 1,
+            'controls': 1
+          }},
+          events: {{
+            'onStateChange': onPlayerStateChange
+          }}
+        }});
+      }}
+
+      function onPlayerStateChange(event) {{
+        // YT.PlayerState.PLAYING is 1. We check if the video ID has updated inside the embedded playlist sequence.
+        if (event.data == 1) {{
+          var currentVideoUrl = player.getVideoUrl();
+          var videoId = currentVideoUrl.split('v=')[1];
+          if (videoId) {{
+             var cleanId = videoId.split('&')[0];
+             window.parent.postMessage({{type: 'yt_track_change', id: cleanId}}, '*');
+          }}
+        }}
+      }}
+    </script>
+    """
+    
+    # Render the player component
+    components.html(html_code, height=380)
+
+    # Invisible hook to capture browser messages and sync Streamlit's backend indexing status
+    st.components.v1.html("""
+    <script>
+        window.parent.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'yt_track_change') {
+                const videoId = e.data.id;
+                // Forward it down to standard Streamlit processing parameters
+                window.parent.document.dispatchEvent(new CustomEvent('YT_TRACK_EVENT', {detail: videoId}));
+            }
+        });
+    </script>
+    """, height=0)
+
     # --- Playlist Navigation Controls ---
     st.markdown("### 🎛️ Navigation Controls")
     btn_prev, btn_next = st.columns(2)
@@ -131,7 +184,7 @@ if st.session_state.playlist:
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
             else:
-                st.session_state.current_index = len(st.session_state.playlist) - 1  # Loop to end
+                st.session_state.current_index = len(st.session_state.playlist) - 1
             st.rerun()
             
     with btn_next:
@@ -139,7 +192,7 @@ if st.session_state.playlist:
             if st.session_state.current_index < len(st.session_state.playlist) - 1:
                 st.session_state.current_index += 1
             else:
-                st.session_state.current_index = 0  # Loop to beginning
+                st.session_state.current_index = 0
             st.rerun()
 
     # --- Sidebar Playlist Overview Queue ---
